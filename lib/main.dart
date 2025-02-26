@@ -1,91 +1,111 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_phoenix/flutter_phoenix.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:get/get_navigation/src/root/get_material_app.dart';
+import 'package:get/instance_manager.dart';
+import 'package:get_storage/get_storage.dart';
+import 'controller/auth_controller.dart';
+import 'core/api/api_client.dart';
+import 'core/api/api_config.dart';
+import 'core/api/api_retry_manager.dart';
+import 'core/utils/app_color.dart';
+import 'core/utils/app_layout.dart';
+import 'core/utils/session_manager.dart';
+import 'route/app_pages.dart';
+import 'route/app_routes.dart';
 
-void main() {
-  runApp(const MyApp());
+final ApiRetryManager apiRetryManager = ApiRetryManager();
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await GetStorage.init();
+  await SessionManager.init();
+
+  ApiClient myApiClient = ApiClient(appBaseUrl: ApiConfig.baseUrl);
+
+  Get.lazyPut<AuthController>(() => AuthController(apiClient: myApiClient),
+      fenix: true);
+
+  // Get.put(NetworkController());
+  runApp(
+    Phoenix(
+      child: const MyApp(),
+    ),
+  );
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
-    );
-  }
+  State<MyApp> createState() => _MyAppState();
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  final String title;
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
+  void dispose() {
+    super.dispose();
+    WidgetsBinding.instance.removeObserver(this);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
+    AppLayout.screenPortrait(context, colors: AppColor.backGround);
+    bool isLoggedIn = SessionManager.getValue(kIsLOGIN, value: false);
+
+    return ScreenUtilInit(
+      designSize: const Size(440, 945),
+      minTextAdapt: true,
+      splitScreenMode: true,
+      builder: (context, child) {
+        return MediaQuery(
+          data: MediaQuery.of(context)
+              .copyWith(textScaler: const TextScaler.linear(1)),
+          child: GetMaterialApp(
+            navigatorKey: navigatorKey,
+            builder: FToastBuilder(),
+            debugShowCheckedModeBanner: false,
+            initialRoute: isLoggedIn ? Routes.newsFeedRoute : Routes.loginRoute,
+            getPages: AppPages.routes,
+            theme: ThemeData(
+              textSelectionTheme: TextSelectionThemeData(
+                cursorColor: AppColor.darkCyan,
+                selectionHandleColor: AppColor.textColor,
+                selectionColor: AppColor.btnColor.withValues(alpha: 0.4),
+              ),
             ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+          ),
+        );
+      },
     );
+  }
+
+  bool _isBackgrounded = false;
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.paused) {
+      _isBackgrounded = true;
+    } else if (state == AppLifecycleState.detached) {
+      if (_isBackgrounded) {
+        _restartApp();
+      }
+      _isBackgrounded = false;
+    }
+  }
+
+  Future<void> _restartApp() async {
+    runApp(const MyApp());
   }
 }

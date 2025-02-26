@@ -1,7 +1,9 @@
 class AppImage{
   static const String appLogo = "assets/images/app_logo.svg";
+  static const String appName = "assets/images/app_name.svg";
   static const String loginBg = "assets/images/login_bg.svg";
-  static const String icEyeVisible = "assets/images/ic_eye_visible.svg";
+  static const String icShow = "assets/images/ic_eye_visible.svg";
+  static const String icHide = "assets/images/ic_eye_hide.svg";
   static const String icCommunity = "assets/images/ic_community.svg";
   static const String icLogout = "assets/images/ic_logout.svg";
   static const String icMenu = "assets/images/ic_menu.svg";

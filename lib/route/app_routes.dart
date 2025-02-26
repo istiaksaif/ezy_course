@@ -1,5 +1,5 @@
 abstract class Routes {
   static const loginRoute = '/login';
-  static const homeRoute = '/home';
+  static const newsFeedRoute = '/newsFeed';
   static const addPostRoute = '/addPost';
 }

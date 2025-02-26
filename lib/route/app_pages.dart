@@ -1,5 +1,6 @@
 import 'package:get/route_manager.dart';
-import '../view/auth/log_in_screen.dart';
+import '../view/screen/auth/log_in_screen.dart';
+import '../view/screen/main_feed/news_feed_screen.dart';
 import 'app_routes.dart';
 
 class AppPages {
@@ -11,8 +12,8 @@ class AppPages {
       transitionDuration: const Duration(milliseconds: 300),
     ),
     GetPage(
-      name: Routes.homeRoute,
-      page: () => const LogInScreen(),
+      name: Routes.newsFeedRoute,
+      page: () => const NewsFeedScreen(),
       transition: Transition.fade,
       transitionDuration: const Duration(milliseconds: 300),
     ),

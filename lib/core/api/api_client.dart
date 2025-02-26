@@ -1,35 +1,38 @@
 import 'dart:convert';
+import 'dart:io';
+import 'dart:ui' as ui;
+import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
-import 'package:get_storage/get_storage.dart';
+import 'package:get/route_manager.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/http.dart';
 import 'package:http_parser/http_parser.dart';
 import 'package:image_picker/image_picker.dart';
-import '../../model/error_response.dart';
+import '../../route/app_routes.dart';
+import '../../transition/fade_transition.dart';
 import '../utils/session_manager.dart';
-import 'api_config.dart';
 
 class ApiClient {
-  final GetStorage? sharedPreferences;
+  final String appBaseUrl;
   static const String noInternetMessage = 'connection_to_api_server_failed';
   final int timeoutInSeconds = 30;
-  String? token;
-  String appBaseUrl;
+
+  String accessToken = '';
   late Map<String, String> _mainHeaders;
 
-  ApiClient({this.appBaseUrl = ApiConfig.baseUrl, this.sharedPreferences}) {
-    if (sharedPreferences != null) {
-      token = sharedPreferences!.read(kUserName);
-      if (kDebugMode) {
-        debugPrint('Token: $token');
-      }
-      updateHeader(token: token);
-    } else {
-      updateHeader();
-    }
+  ApiClient({required this.appBaseUrl}) {
+    accessToken = SessionManager.getValue(kToken, value: '');
+    updateHeader(token: accessToken);
+  }
+
+  void removeToken() {
+    accessToken = '';
   }
 
   void updateHeader({String? token, bool? multipart}) async {
+    if (accessToken.isEmpty && token != null) {
+      accessToken = token;
+    }
     if (multipart ?? false) {
       _mainHeaders = {
         'Content-Type': 'multipart/form-data',
@@ -40,17 +43,21 @@ class ApiClient {
       _mainHeaders = {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Authorization': 'Bearer $token'
+        'Authorization': 'Bearer $accessToken',
       };
     }
   }
 
-  Future<Response> getData(String uri,
-      {Map<String, dynamic>? query, Map<String, String>? headers}) async {
+  Future<Response> getData(
+    String uri, {
+    Map<String, dynamic>? query,
+    Map<String, String>? headers,
+    bool isAutoLogout = false,
+  }) async {
     try {
-      Uri fullUri = Uri.parse(appBaseUrl + uri).replace(queryParameters: query);
+      Uri fullUri =
+          Uri.parse('$appBaseUrl$uri').replace(queryParameters: query);
       if (kDebugMode) {
-        debugPrint('====> API Base url: $appBaseUrl');
         debugPrint('====> API Call: $fullUri\nHeader: $_mainHeaders');
       }
       http.Response response = await http
@@ -59,41 +66,63 @@ class ApiClient {
             headers: headers ?? _mainHeaders,
           )
           .timeout(Duration(seconds: timeoutInSeconds));
-      return handleResponse(response, uri);
-    } catch (e) {
-      return Response(
-        noInternetMessage,
-        0,
+      return handleResponse(
+        response,
+        uri,
+        isAutoLogout: isAutoLogout,
       );
+    } catch (e) {
+      debugPrint('====> $e');
+      if (e is SocketException || e.toString().contains('No Internet')) {
+        return Response(
+          noInternetMessage,
+          0,
+        );
+      } else {
+        return Response(
+          'Something went wrong! try again later',
+          -1,
+        );
+      }
     }
   }
 
-  Future<Response> postData(String uri, dynamic body,
-      {Map<String, String>? headers,
-      bool? isConvert = true,
-      bool isPrint = false,}) async {
+  Future<Response> postData(
+    String uri,
+    dynamic body, {
+    Map<String, String>? headers,
+    bool? isConvert = true,
+    String? differBaseUrl,
+  }) async {
+    if (_mainHeaders['Content-Type']?.contains('multipart/form-data') == true) {
+      updateHeader();
+    }
+
     try {
       if (kDebugMode) {
-        debugPrint('====> API Call: $appBaseUrl$uri\nHeader: $_mainHeaders');
+        debugPrint('====> API Call: $uri\nHeader: $_mainHeaders');
         debugPrint('====> API Body: $body');
       }
       http.Response response = await http
           .post(
-            Uri.parse(appBaseUrl + uri),
+            Uri.parse((differBaseUrl ?? appBaseUrl) + uri),
             body: isConvert! ? jsonEncode(body) : body,
             headers: headers ?? _mainHeaders,
           )
           .timeout(Duration(seconds: timeoutInSeconds));
-      return handleResponse(response, uri);
+      return handleResponse(
+        response,
+        uri,
+      );
     } catch (_) {
       return Response(noInternetMessage, 0);
     }
   }
 
   Future<Response> postMultipartData(
-      String uri, Map<String, String> body, List<MultipartBody> multipartBody,
-      {Map<String, String>? headers}) async {
-    updateHeader(token: token, multipart: true);
+      String uri, Map<String, dynamic> body, List<MultipartBody> multipartBody,
+      {Map<String, String>? headers, bool needWatermark = false}) async {
+    updateHeader(token: accessToken, multipart: true);
     try {
       if (kDebugMode) {
         debugPrint('====> API Call: $uri\nHeader: $_mainHeaders');
@@ -104,16 +133,22 @@ class ApiClient {
       request.headers.addAll(headers ?? _mainHeaders);
       for (MultipartBody multipart in multipartBody) {
         if (multipart.file != null) {
+          // if (!needWatermark) {
+          String extension = multipart.file!.path.split('.').last;
           Uint8List list = await multipart.file!.readAsBytes();
           request.files.add(http.MultipartFile(
             multipart.key,
             multipart.file!.readAsBytes().asStream(),
             list.length,
-            filename: '${DateTime.now().toString()}.webp',
+            filename: '${DateTime.now().millisecondsSinceEpoch}.$extension',
+            contentType: MediaType('image', 'webp'),
           ));
         }
       }
-      request.fields.addAll(body);
+      body.forEach((key, value) {
+        request.fields[key] = value.toString();
+      });
+
       http.Response response =
           await http.Response.fromStream(await request.send());
       return handleResponse(response, uri);
@@ -176,7 +211,7 @@ class ApiClient {
   Future<Response> patchMultipartData(
       String uri, Map<String, String> body, List<MultipartBody> multipartBody,
       {Map<String, String>? headers}) async {
-    updateHeader(token: token, multipart: true);
+    updateHeader(token: accessToken, multipart: true);
     try {
       if (kDebugMode) {
         debugPrint('====> API Call: $uri\nHeader: $_mainHeaders');
@@ -234,7 +269,11 @@ class ApiClient {
     }
   }
 
-  Response handleResponse(http.Response response, String uri) {
+  Response handleResponse(
+    http.Response response,
+    String uri, {
+    bool isAutoLogout = true,
+  }) {
     dynamic body;
     Response response0;
     try {
@@ -250,23 +289,18 @@ class ApiClient {
       );
     }
     if (response0.statusCode != 200 && response0.statusCode != 201) {
-      if (response0.body.toString().startsWith('{errors: [{code:')) {
-        ErrorResponse errorResponse =
-            ErrorResponse.fromJson(json.decode(response0.body));
-        response0 = Response(errorResponse.message ?? '', response0.statusCode);
-      } else if (response0.statusCode == 401) {
-        sharedPreferences?.write(kUserName, "");
-        try {
-          response0 = Response(
-              json.decode(response0.body)["message"], response0.statusCode);
-        } catch (_) {}
-      } else {
-        try {
-          response0 = Response(body["message"], response0.statusCode);
-        } catch (_) {
-          response0 = Response(
-              jsonDecode(response.body)['message'], response0.statusCode);
+      if (response0.statusCode == 401 &&
+          Get.currentRoute != Routes.loginRoute) {
+        if (isAutoLogout) {
+          accessToken = '';
+          SessionManager.logout();
+          const FadeScreenTransition(
+            routeName: Routes.loginRoute,
+            replace: true,
+          ).navigate();
         }
+      } else {
+        response0 = Response(response0.body, response0.statusCode);
       }
     } else if (response0.statusCode != 200 &&
         response0.statusCode != 201 &&
@@ -278,6 +312,64 @@ class ApiClient {
           '====> API Response: [${response0.statusCode}] $uri\n${response0.body}');
     }
     return response0;
+  }
+
+  Future<Uint8List?> addWatermark(Uint8List imageBytes) async {
+    // Load the watermark image from assets
+    final ByteData watermarkData =
+        await rootBundle.load('assets/images/watermark_image.webp');
+    final Uint8List watermarkBytes = watermarkData.buffer.asUint8List();
+
+    // Decode both the original and watermark images to ensure proper handling
+    ui.Codec originalCodec = await ui.instantiateImageCodec(imageBytes);
+    ui.FrameInfo originalFrame = await originalCodec.getNextFrame();
+
+    ui.Codec watermarkCodec = await ui.instantiateImageCodec(watermarkBytes);
+    ui.FrameInfo watermarkFrame = await watermarkCodec.getNextFrame();
+
+    // Get dimensions for both images
+    int originalWidth = originalFrame.image.width;
+    int originalHeight = originalFrame.image.height;
+    int watermarkWidth = watermarkFrame.image.width;
+    int watermarkHeight = watermarkFrame.image.height;
+
+    // Scale watermark to cover the full image
+    final recorder = ui.PictureRecorder();
+    final canvas = ui.Canvas(
+        recorder,
+        Rect.fromPoints(Offset(0, 0),
+            Offset(originalWidth.toDouble(), originalHeight.toDouble())));
+
+    // Draw the original image first
+    canvas.drawImage(originalFrame.image, Offset.zero, ui.Paint());
+
+    // Scale the watermark to cover the full size of the original image
+    ui.Paint paint = ui.Paint();
+    paint.isAntiAlias = true;
+
+    // Draw the watermark with transparency (alpha blending)
+    final Rect watermarkRect = Rect.fromLTWH(
+        0, 0, originalWidth.toDouble(), originalHeight.toDouble());
+
+    canvas.drawImageRect(
+        watermarkFrame.image,
+        Rect.fromLTWH(
+            0, 0, watermarkWidth.toDouble(), watermarkHeight.toDouble()),
+        watermarkRect,
+        paint);
+
+    // Convert the result to an image
+    final ui.Image finalImage =
+        await recorder.endRecording().toImage(originalWidth, originalHeight);
+
+    // Convert the image to bytes (Uint8List)
+    ByteData? byteData =
+        await finalImage.toByteData(format: ui.ImageByteFormat.png);
+    if (byteData != null) {
+      return byteData.buffer.asUint8List();
+    }
+
+    return null;
   }
 }
 
