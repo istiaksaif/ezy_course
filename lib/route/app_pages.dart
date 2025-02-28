@@ -1,5 +1,6 @@
 import 'package:get/route_manager.dart';
 import '../view/screen/auth/log_in_screen.dart';
+import '../view/screen/create_post/create_post_screen.dart';
 import '../view/screen/main_feed/news_feed_screen.dart';
 import 'app_routes.dart';
 
@@ -19,7 +20,7 @@ class AppPages {
     ),
     GetPage(
       name: Routes.addPostRoute,
-      page: () => const LogInScreen(),
+      page: () => const CreatePostScreen(),
       transition: Transition.fade,
       transitionDuration: const Duration(milliseconds: 300),
     ),

@@ -32,6 +32,7 @@ class CustomTextField extends StatefulWidget {
   final Color? borderColor;
   final double? paddingVertical;
   final double? paddingHor;
+  final double borderWidth;
   final double? fixedWidth;
   final bool? readOnly;
   final TextStyle? textStyle;
@@ -87,6 +88,7 @@ class CustomTextField extends StatefulWidget {
     this.borderColor,
     this.inputFormatters,
     this.showCounter = false,
+    this.borderWidth = 1.22,
     this.hintColor,
     this.textFont,
     this.hintFontSize,
@@ -186,22 +188,22 @@ class _CustomTextFieldState extends State<CustomTextField> {
             border: widget.inputBorder ??
                 OutlineInputBorder(
                   borderSide: BorderSide(
-                    color: AppColor.cardStockColor.withValues(alpha: 0.2),
-                    width: 1.22,
+                    color: widget.borderColor??AppColor.cardStockColor.withValues(alpha: 0.2),
+                    width: widget.borderWidth,
                   ),
                   borderRadius: BorderRadius.circular(9.r),
                 ),
             enabledBorder: OutlineInputBorder(
               borderSide: BorderSide(
-                color: AppColor.cardStockColor.withValues(alpha: 0.2),
-                width: 1.22,
+                color: widget.borderColor??AppColor.cardStockColor.withValues(alpha: 0.2),
+                width: widget.borderWidth,
               ),
               borderRadius: BorderRadius.circular(9.r),
             ),
             focusedBorder: OutlineInputBorder(
               borderSide: BorderSide(
-                color: AppColor.cardStockColor.withValues(alpha: 0.2),
-                width: 1.22,
+                color: widget.borderColor??AppColor.cardStockColor.withValues(alpha: 0.2),
+                width: widget.borderWidth,
               ),
               borderRadius: BorderRadius.circular(9.r),
             ),
@@ -209,7 +211,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
               borderSide: BorderSide(
                 color:
                 widget.errorText != null ? AppColor.red : Colors.transparent,
-                width: 1.22,
+                width: widget.borderWidth,
               ),
               borderRadius: BorderRadius.circular(9.r),
             ),
@@ -217,7 +219,7 @@ class _CustomTextFieldState extends State<CustomTextField> {
               borderSide: BorderSide(
                 color:
                 widget.errorText != null ? AppColor.red : Colors.transparent,
-                width: 1.22,
+                width: widget.borderWidth,
               ),
               borderRadius: BorderRadius.circular(9.r),
             ),

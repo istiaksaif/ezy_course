@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:developer';
 import 'dart:io';
 import 'dart:ui' as ui;
 import 'package:flutter/services.dart';
@@ -91,6 +92,7 @@ class ApiClient {
     String uri,
     dynamic body, {
     Map<String, String>? headers,
+    Map<String, dynamic>? query,
     bool? isConvert = true,
     String? differBaseUrl,
   }) async {
@@ -99,13 +101,15 @@ class ApiClient {
     }
 
     try {
+      Uri fullUri = Uri.parse('${(differBaseUrl ?? appBaseUrl)}$uri')
+          .replace(queryParameters: query);
       if (kDebugMode) {
         debugPrint('====> API Call: $uri\nHeader: $_mainHeaders');
         debugPrint('====> API Body: $body');
       }
       http.Response response = await http
           .post(
-            Uri.parse((differBaseUrl ?? appBaseUrl) + uri),
+            fullUri,
             body: isConvert! ? jsonEncode(body) : body,
             headers: headers ?? _mainHeaders,
           )
@@ -281,12 +285,8 @@ class ApiClient {
         response.body,
         response.statusCode,
       );
-    } catch (_) {
-      body = jsonDecode(response.body);
-      response0 = Response(
-        jsonEncode(body ?? response.body),
-        response.statusCode,
-      );
+    } catch (e) {
+      response0 = response;
     }
     if (response0.statusCode != 200 && response0.statusCode != 201) {
       if (response0.statusCode == 401 &&

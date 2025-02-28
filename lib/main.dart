@@ -7,16 +7,16 @@ import 'package:get/get_navigation/src/root/get_material_app.dart';
 import 'package:get/instance_manager.dart';
 import 'package:get_storage/get_storage.dart';
 import 'controller/auth_controller.dart';
+import 'controller/community_feed_controller.dart';
+import 'controller/create_post_controller.dart';
 import 'core/api/api_client.dart';
 import 'core/api/api_config.dart';
-import 'core/api/api_retry_manager.dart';
 import 'core/utils/app_color.dart';
 import 'core/utils/app_layout.dart';
 import 'core/utils/session_manager.dart';
 import 'route/app_pages.dart';
 import 'route/app_routes.dart';
 
-final ApiRetryManager apiRetryManager = ApiRetryManager();
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
 void main() async {
@@ -30,7 +30,13 @@ void main() async {
   Get.lazyPut<AuthController>(() => AuthController(apiClient: myApiClient),
       fenix: true);
 
-  // Get.put(NetworkController());
+  Get.lazyPut<CommunityFeedController>(
+      () => CommunityFeedController(apiClient: myApiClient),
+      fenix: true);
+  Get.lazyPut<CreatePostController>(
+      () => CreatePostController(apiClient: myApiClient),
+      fenix: true);
+
   runApp(
     Phoenix(
       child: const MyApp(),
