@@ -70,6 +70,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
                 InkWell(
                   splashColor: Colors.transparent,
                   onTap: () {
+                    FocusScope.of(context).requestFocus(FocusNode());
                     createPostController.createPost();
                   },
                   child: Padding(

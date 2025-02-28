@@ -115,10 +115,10 @@ class CommunityFeedController extends GetxController {
         CommentModel newComment = CommentModel.fromJson(responseData);
 
         if (parentId.value > -1) {
-          int parentIndex = listOfComment
-              .indexWhere((comment) => comment.id == parentId.value);
+          int parentIndex = listOfComment.indexWhere((comment) => comment.id == parentId.value);
           if (parentIndex != -1) {
             var parentComment = listOfComment[parentIndex];
+
             parentComment.replies = (parentComment.replies ?? [])
               ..add(newComment);
             listOfComment[parentIndex] = parentComment;
@@ -170,7 +170,6 @@ class CommunityFeedController extends GetxController {
             comment.replies = [];
           }
         }
-
         listOfComment.refresh();
       }
     } catch (_) {
@@ -184,15 +183,46 @@ class CommunityFeedController extends GetxController {
 
     try {
       Response? response =
-          await apiClient.getData('${ApiConfig.getReplyUrl}/$commentId');
+      await apiClient.getData('${ApiConfig.getReplyUrl}/$commentId');
 
       if (response.statusCode == 200) {
-        return commentModelFromJson(response.body);
+        List<CommentModel> replies = commentModelFromJson(response.body);
+
+        for (var reply in replies) {
+          if (reply.replyCount != null && reply.replyCount! > 0) {
+            reply.replies = await fetchReply(reply.id);
+          } else {
+            reply.replies = [];
+          }
+        }
+        return replies;
       }
     } catch (_) {
-      // Handle error if needed
     }
 
-    return []; // Return empty list if request fails
+    return [];
   }
+
+  void _addReplyToParentComment(CommentModel parentComment, CommentModel newReply) {
+    parentComment.replies ??= [];
+    parentComment.replies!.add(newReply);
+
+    int parentIndex = listOfComment.indexWhere((comment) => comment.id == parentComment.id);
+    if (parentIndex != -1) {
+      listOfComment[parentIndex] = parentComment;
+    }
+  }
+
+  void _addTopLevelComment(int? feedId, CommentModel newComment) {
+    listOfComment.insert(0, newComment);
+
+    int index = listOfFeed.indexWhere((feed) => feed.id == feedId);
+    if (index != -1) {
+      var updatedFeed = listOfFeed[index];
+      updatedFeed.commentCount = (updatedFeed.commentCount ?? 0) + 1;
+      listOfFeed[index] = updatedFeed;
+      listOfFeed.refresh();
+    }
+  }
+
 }

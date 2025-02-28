@@ -1,18 +1,19 @@
-# Ezy Course
+# Community Feed Application
 
-Ezy Course is a flutter application designed to provide a comprehensive learning experience with robust community engagement features. The app enables users to access community feeds, interact via posts and reactions, and participate in dynamic discussions with an integrated commenting system.
+This is a community feed application built using **Flutter**, allowing users to authenticate, create posts, react to posts, comment, reply to comments, and more. The app dynamically fetches posts from a provided API and displays them in a scrollable feed.
 
 ## Features
 
-- **User Authentication**
-    - Secure login and logout functionality to manage user sessions.
+- **Authentication**
+    - Secure login and logout functionality to clear user sessions.
 - **Default Credentials (for testing):**
     - **Email**: `stu@test.io`
     - **Password**: `123456`
 - **Community Feeds**
     - Fetch and display community posts.
-    - Add reactions to posts.
+    - Add/Update reactions to posts.
     - Post comments with replies.
+    - real-time updates, ensuring that newly created posts, reactions, and comments are displayed immediately without requiring the user to refresh the page.
 - **Post Integration**
     - Create, manage, and interact with posts.
 - **Interactive UI**
@@ -35,16 +36,14 @@ Ezy Course is a flutter application designed to provide a comprehensive learning
    ```bash
    git clone https://github.com/istiaksaif/ezy_course.git
 
-### Folder Structure
+### Folders Breakdown
 
-lib/
-├── controller/         # GetX controllers for managing state (e.g., authentication, feeds, comments, reactions)
-├── core/
-│   ├── api/            # API clients and networking logic when failed due to network
-│   └── utils/          # Utility functions, constants, and helper classes
-├── route/              # Application routing and navigation logic
-├── model/              # Data models (e.g., CommentModel, CommunityFeedModel) that define the data structure
-└── view/               # UI screens and pages
-    ├── screen/         # Main screens of the app (e.g., login, community feed, post list)
-    ├── dialog/         # Reusable dialog,bottomSheet UI components
-    └── widget/         # Reusable widgets/components, buttons, custom inputs filed, app bars
+- **controller/**: Contains all the GetX controllers that manage state for various features like authentication, feeds, comments, reactions, etc.
+- **core/api/**: Handles the API calls and responses for fetching posts, submitting posts, comments, etc.
+- **core/utils/**: Contains utility functions, constants, and helper classes used throughout the app.
+- **route/**: Manages routing and navigation logic between screens.
+- **model/**: Defines the data models such as `PostModel`, `CommentModel`, and others used in the app.
+- **view/**: Contains UI screens and pages (e.g., `LoginScreen`, `FeedScreen`, `PostDetailsScreen`).
+    - **screen/**: Major screens like login, home, post details.
+    - **widget/**: Reusable UI components like buttons, text fields, etc.
+    - **dialog/**: Custom dialogs, if any.

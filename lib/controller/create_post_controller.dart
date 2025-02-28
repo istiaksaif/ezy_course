@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:ezy_course/controller/community_feed_controller.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/instance_manager.dart';
@@ -7,6 +9,7 @@ import 'package:http/http.dart';
 
 import '../core/api/api_client.dart';
 import '../core/api/api_config.dart';
+import '../model/community_feed_model.dart';
 import '../view/widget/show_custom_toast.dart';
 
 class CreatePostController extends GetxController {
@@ -39,7 +42,10 @@ class CreatePostController extends GetxController {
       Response response =
           await apiClient.postData(ApiConfig.createPostUrl, body);
       if (response.statusCode == 200) {
-        Get.find<CommunityFeedController>().fetchCommunityFeed();
+        var responseData = jsonDecode(response.body);
+        Get.find<CommunityFeedController>()
+            .listOfFeed
+            .insert(0, CommunityFeedModel.fromJson(responseData));
         Get.back();
       } else {
         showCustomToast('Something went wrong!');
