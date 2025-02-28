@@ -38,12 +38,22 @@ This is a community feed application built using **Flutter**, allowing users to 
 
 ### Folders Breakdown
 
-- **controller/**: Contains all the GetX controllers that manage state for various features like authentication, feeds, comments, reactions, etc.
-- **core/api/**: Handles the API calls and responses for fetching posts, submitting posts, comments, etc.
-- **core/utils/**: Contains utility functions, constants, and helper classes used throughout the app.
-- **route/**: Manages routing and navigation logic between screens.
-- **model/**: Defines the data models such as `PostModel`, `CommentModel`, and others used in the app.
-- **view/**: Contains UI screens and pages (e.g., `LoginScreen`, `FeedScreen`, `PostDetailsScreen`).
-    - **screen/**: Major screens like login, home, post details.
-    - **widget/**: Reusable UI components like buttons, text fields, etc.
-    - **dialog/**: Custom dialogs, if any.
+<ul>
+  <li><strong>lib/</strong></li>
+  <ul>
+    <li><strong>controller/</strong> - GetX controllers for managing state (e.g., authentication, feeds, comments, reactions)</li>
+    <li><strong>core/</strong> - API clients and networking logic when failed due to network</li>
+    <ul>
+      <li><strong>api/</strong> - API clients and networking logic when failed due to network</li>
+      <li><strong>utils/</strong> - Utility functions, constants, and helper classes</li>
+    </ul>
+    <li><strong>route/</strong> - Application routing and navigation logic</li>
+    <li><strong>model/</strong> - Data models (e.g., CommentModel, CommunityFeedModel) that define the data structure</li>
+    <li><strong>view/</strong> - UI screens and pages</li>
+    <ul>
+      <li><strong>screen/</strong> - Main screens of the app (e.g., login, community feed, post list)</li>
+      <li><strong>dialog/</strong> - Reusable dialog, bottomSheet UI components</li>
+      <li><strong>widget/</strong> - Reusable widgets/components, buttons, custom inputs fields, app bars</li>
+    </ul>
+  </ul>
+</ul>
