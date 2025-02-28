@@ -1,6 +1,4 @@
 import 'dart:convert';
-import 'dart:developer';
-
 import 'package:ezy_course/model/community_feed_model.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/state_manager.dart';
@@ -8,6 +6,7 @@ import 'package:http/http.dart';
 
 import '../core/api/api_client.dart';
 import '../core/api/api_config.dart';
+import '../core/api/api_retry_manager.dart';
 import '../model/comment_model.dart';
 
 class CommunityFeedController extends GetxController {
@@ -42,6 +41,9 @@ class CommunityFeedController extends GetxController {
         listOfFeed.value = communityFeedModelFromJson(response.body);
       }
     } catch (_) {
+      apiRetryManager.addRequest(() {
+        fetchCommunityFeed();
+      });
     } finally {
       isLoading.value = false;
     }

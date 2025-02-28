@@ -9,6 +9,7 @@ import 'package:get_storage/get_storage.dart';
 import 'controller/auth_controller.dart';
 import 'controller/community_feed_controller.dart';
 import 'controller/create_post_controller.dart';
+import 'controller/network_controller.dart';
 import 'core/api/api_client.dart';
 import 'core/api/api_config.dart';
 import 'core/utils/app_color.dart';
@@ -36,7 +37,7 @@ void main() async {
   Get.lazyPut<CreatePostController>(
       () => CreatePostController(apiClient: myApiClient),
       fenix: true);
-
+  Get.put(NetworkController());
   runApp(
     Phoenix(
       child: const MyApp(),
